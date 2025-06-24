@@ -22,17 +22,14 @@ if (isset($_POST['username']) && isset($_POST['password']) && isset($_POST['role
 	} else if (empty($password)) {
 		header("Location: loginform.php?error=Password is Required");
 	} else {
-
-		// Hashing the password
-		$password = md5($password);
-
-		$sql = "SELECT * FROM users WHERE username='$username' AND password='$password'";
-		$result = mysqli_query($conn, $sql);
-
-		if (mysqli_num_rows($result) === 1) {
-			// the user name must be unique
-			$row = mysqli_fetch_assoc($result);
-			if ($row['password'] === $password && $row['role'] === $role) {
+		// Use prepared statement to fetch user by username
+		$stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		$result = $stmt->get_result();
+		if ($result->num_rows === 1) {
+			$row = $result->fetch_assoc();
+			if (password_verify($password, $row['password']) && $row['role'] === $role) {
 				$_SESSION['name'] = $row['name'];
 				$_SESSION['id'] = $row['id'];
 				$_SESSION['role'] = $row['role'];
@@ -40,11 +37,12 @@ if (isset($_POST['username']) && isset($_POST['password']) && isset($_POST['role
 				$_SESSION['login'] = true;
 				header("Location: role.php");
 			} else {
-				header("Location: loginform.php?error=Incorect User name or password");
+				header("Location: loginform.php?error=Incorrect User name or password");
 			}
 		} else {
-			header("Location: loginform.php?error=Incorect User name or password");
+			header("Location: loginform.php?error=Incorrect User name or password");
 		}
+		$stmt->close();
 	}
 } else {
 	header("Location: loginform.php");
