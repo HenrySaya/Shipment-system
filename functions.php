@@ -59,25 +59,23 @@ function registrasi($data)
 //function buat customer add shipment
 function addshipment($data)
 {
-	global $conn;
-
-	$username = $_SESSION['username'];
-	$productdesc = htmlspecialchars($data["productdesc"]);
-	$weight = htmlspecialchars($data["weight"]);
-	$shipmenttype = htmlspecialchars($data["shipmenttype"]);
-	$itemtype = htmlspecialchars($data["itemtype"]);
-	$address = htmlspecialchars($data["address"]);
-	$status = "waiting for confirmation";
-	$invoice = "";
-
-	$query = "INSERT INTO addshipment
-				VALUES
-			  ('', '$username', '$productdesc', '$weight', '$shipmenttype','$itemtype','$address','$status','$invoice')
-			";
-	mysqli_query($conn, $query);
-
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $username = $_SESSION['username'];
+    $productdesc = htmlspecialchars($data["productdesc"]);
+    $weight = htmlspecialchars($data["weight"]);
+    $shipmenttype = htmlspecialchars($data["shipmenttype"]);
+    $itemtype = htmlspecialchars($data["itemtype"]);
+    $address = htmlspecialchars($data["address"]);
+    $status = "waiting for confirmation";
+    $invoice = "";
+    $stmt = $conn->prepare("INSERT INTO addshipment (username, productdesc, weight, shipmenttype, itemtype, address, status, invoice) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssss", $username, $productdesc, $weight, $shipmenttype, $itemtype, $address, $status, $invoice);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
+
 function cari($keyword)
 {
 	$query = "SELECT * FROM addshipment
@@ -93,24 +91,22 @@ function cari($keyword)
 //function buat admin nampilin request shipment dr customer
 function requestshipment($data)
 {
-	global $conn;
-
-	$username = htmlspecialchars($data["username"]);
-	$productdesc = htmlspecialchars($data["productdesc"]);
-	$weight = htmlspecialchars($data["weight"]);
-	$shipmenttype = htmlspecialchars($data["shipmenttype"]);
-	$itemtype = htmlspecialchars($data["itemtype"]);
-	$address = htmlspecialchars($data["address"]);
-	$status = htmlspecialchars($data["status"]);
-
-	$query = "INSERT INTO addshipment
-				VALUES
-			  ('', '$username', '$productdesc', '$weight', '$shipmenttype','$itemtype','$address','$status')
-			";
-	mysqli_query($conn, $query);
-
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $username = htmlspecialchars($data["username"]);
+    $productdesc = htmlspecialchars($data["productdesc"]);
+    $weight = htmlspecialchars($data["weight"]);
+    $shipmenttype = htmlspecialchars($data["shipmenttype"]);
+    $itemtype = htmlspecialchars($data["itemtype"]);
+    $address = htmlspecialchars($data["address"]);
+    $status = htmlspecialchars($data["status"]);
+    $stmt = $conn->prepare("INSERT INTO addshipment (username, productdesc, weight, shipmenttype, itemtype, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssss", $username, $productdesc, $weight, $shipmenttype, $itemtype, $address, $status);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
+
 function find($keyword)
 {
 	$query = "SELECT * FROM addshipment
@@ -126,89 +122,79 @@ function find($keyword)
 //function buat masukin cancel request ke dalam rows
 function cancellation($data)
 {
-	global $conn;
-
-	$id = $data["idaddshipment"];
-	$username = $data["username"];
-	$productdesc = $data["productdesc"];
-	$weight = $data["weight"];
-	$shipmenttype = $data["shipmenttype"];
-	$itemtype = $data["itemtype"];
-	$address = $data["address"];
-	$status = $data["status"];
-	// cek apakah user pilih gambar baru atau tidak
-
-	$query = "INSERT INTO cancellation VALUES
-				('$id','$username','$productdesc','$weight','$shipmenttype','$itemtype','$address','$status')
-			";
-
-	mysqli_query($conn, $query);
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $id = $data["idaddshipment"];
+    $username = $data["username"];
+    $productdesc = $data["productdesc"];
+    $weight = $data["weight"];
+    $shipmenttype = $data["shipmenttype"];
+    $itemtype = $data["itemtype"];
+    $address = $data["address"];
+    $status = $data["status"];
+    $stmt = $conn->prepare("INSERT INTO cancellation (idaddshipment, username, productdesc, weight, shipmenttype, itemtype, address, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssssss", $id, $username, $productdesc, $weight, $shipmenttype, $itemtype, $address, $status);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
+
 function deny($idaddshipment)
 {
-	global $conn;
-	mysqli_query($conn, "DELETE FROM cancellation WHERE idaddshipment = $idaddshipment");
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $stmt = $conn->prepare("DELETE FROM cancellation WHERE idaddshipment = ?");
+    $stmt->bind_param("i", $idaddshipment);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
 
 function cancel($idaddshipment)
 {
-	global $conn;
-	mysqli_query($conn, "DELETE FROM cancellation WHERE idaddshipment = $idaddshipment");
-	mysqli_query($conn, "DELETE FROM addshipment WHERE idaddshipment = $idaddshipment");
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $stmt1 = $conn->prepare("DELETE FROM cancellation WHERE idaddshipment = ?");
+    $stmt1->bind_param("i", $idaddshipment);
+    $stmt1->execute();
+    $stmt1->close();
+    $stmt2 = $conn->prepare("DELETE FROM addshipment WHERE idaddshipment = ?");
+    $stmt2->bind_param("i", $idaddshipment);
+    $stmt2->execute();
+    $affected = $stmt2->affected_rows;
+    $stmt2->close();
+    return $affected;
 }
 
 function forward($data) {
     global $conn;
-
     $id = $data["idaddshipment"];
     $status = "Forward To Loader";
-
-    $query = "UPDATE addshipment SET
-                status = '$status'
-              WHERE idaddshipment = $idaddshipment";
-              
-    $result = mysqli_query($conn, $query);
-
-    if (!$result) {
-        return "Error: " . mysqli_error($conn);
-    } else {
-        return "Success";
-    }
+    $stmt = $conn->prepare("UPDATE addshipment SET status = ? WHERE idaddshipment = ?");
+    $stmt->bind_param("si", $status, $id);
+    $stmt->execute();
+    $result = $stmt->affected_rows;
+    $stmt->close();
+    return $result > 0 ? "Success" : "Error: Forward failed";
 }
 
 function generateinvoice($data)
 {
-	global $conn;
-
-	$id = $data["idaddshipment"];
-	$username = $data['username'];
-	$productdesc = htmlspecialchars($data["productdesc"]);
-	$weight = htmlspecialchars($data["weight"]);
-	$shipmenttype = htmlspecialchars($data["shipmenttype"]);
-	$itemtype = htmlspecialchars($data["itemtype"]);
-	$address = htmlspecialchars($data["address"]);
-	$status = "waiting for confirmation";
-	$invoice = htmlspecialchars($data["invoice"]);
-
-	$query = "UPDATE addshipment
-				SET
-				idaddshipment = '$id',
-				username = '$username',
-				productdesc = '$productdesc',
-				weight = '$weight',
-				shipmenttype = '$shipmenttype',
-				itemtype = '$itemtype',
-				address = '$address',
-				status = '$status',
-				invoice = '$invoice'
-			  WHERE idaddshipment = $id
-			";
-	mysqli_query($conn, $query);
-
-	return mysqli_affected_rows($conn);
+    global $conn;
+    $id = $data["idaddshipment"];
+    $username = $data['username'];
+    $productdesc = htmlspecialchars($data["productdesc"]);
+    $weight = htmlspecialchars($data["weight"]);
+    $shipmenttype = htmlspecialchars($data["shipmenttype"]);
+    $itemtype = htmlspecialchars($data["itemtype"]);
+    $address = htmlspecialchars($data["address"]);
+    $status = "waiting for confirmation";
+    $invoice = htmlspecialchars($data["invoice"]);
+    $stmt = $conn->prepare("UPDATE addshipment SET idaddshipment = ?, username = ?, productdesc = ?, weight = ?, shipmenttype = ?, itemtype = ?, address = ?, status = ?, invoice = ? WHERE idaddshipment = ?");
+    $stmt->bind_param("issssssssi", $id, $username, $productdesc, $weight, $shipmenttype, $itemtype, $address, $status, $invoice, $id);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
 
 function registrasiemployee($data)
