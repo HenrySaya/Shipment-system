@@ -20,41 +20,41 @@ function query($query)
 
 function registrasi($data)
 {
-	global $conn;
+    global $conn;
 
-	$username = strtolower(stripslashes($data["username"]));
-	$name = mysqli_real_escape_string($conn, $data["name"]);
-	$role = mysqli_real_escape_string($conn, $data["role"]);
-	$password = mysqli_real_escape_string($conn, $data["password"]);
-	$password2 = mysqli_real_escape_string($conn, $data["password2"]);
+    $username = strtolower(stripslashes($data["username"]));
+    $name = mysqli_real_escape_string($conn, $data["name"]);
+    $role = mysqli_real_escape_string($conn, $data["role"]);
+    $password = $data["password"];
+    $password2 = $data["password2"];
 
-	// cek username sudah ada atau belum
-	$result = mysqli_query($conn, "SELECT username FROM users WHERE username = '$username'");
+    // cek username sudah ada atau belum
+    $stmt = $conn->prepare("SELECT username FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->fetch_assoc()) {
+        echo "<script>alert('Username already exists!')</script>";
+        return false;
+    }
+    $stmt->close();
 
-	if (mysqli_fetch_assoc($result)) {
-		echo "<script>
-				alert('username DOESNT EXIST!')
-		      </script>";
-		return false;
-	}
+    // cek konfirmasi password
+    if ($password !== $password2) {
+        echo "<script>alert('Enter correct password');</script>";
+        return false;
+    }
 
+    // enkripsi password
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-	// cek konfirmasi password
-	if ($password !== $password2) {
-		echo "<script>
-				alert('Enter correct password');
-		      </script>";
-		return false;
-	}
-
-	// enkripsi password
-	$password = md5($password);
-
-// tambahkan userbaru ke database
-mysqli_query($conn, "INSERT INTO users (username, name, role, password) VALUES ('$username', '$name', '$role', '$password')");
-
-return mysqli_affected_rows($conn);
-
+    // tambahkan userbaru ke database
+    $stmt = $conn->prepare("INSERT INTO users (username, name, role, password) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $username, $name, $role, $passwordHash);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
 //function buat customer add shipment
 function addshipment($data)
@@ -213,38 +213,39 @@ function generateinvoice($data)
 
 function registrasiemployee($data)
 {
-	global $conn;
+    global $conn;
 
-	$username = strtolower(stripslashes($data["username"]));
-	$role = mysqli_real_escape_string($conn, $data["role"]);
-	$password = mysqli_real_escape_string($conn, $data["password"]);
-	$password2 = mysqli_real_escape_string($conn, $data["password2"]);
-	$name = mysqli_real_escape_string($conn, $data["name"]);
+    $username = strtolower(stripslashes($data["username"]));
+    $role = mysqli_real_escape_string($conn, $data["role"]);
+    $password = $data["password"];
+    $password2 = $data["password2"];
+    $name = mysqli_real_escape_string($conn, $data["name"]);
 
-	// cek username sudah ada atau belum
-	$result = mysqli_query($conn, "SELECT username FROM users WHERE username = '$username'");
+    // cek username sudah ada atau belum
+    $stmt = $conn->prepare("SELECT username FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->fetch_assoc()) {
+        echo "<script>alert('Username is registered!')</script>";
+        return false;
+    }
+    $stmt->close();
 
-	if (mysqli_fetch_assoc($result)) {
-		echo "<script>
-				alert('Username is registered!')
-		      </script>";
-		return false;
-	}
+    // cek konfirmasi password
+    if ($password !== $password2) {
+        echo "<script>alert('Password confirmation does not match!');</script>";
+        return false;
+    }
 
+    // enkripsi password
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-	// cek konfirmasi password
-	if ($password !== $password2) {
-		echo "<script>
-				alert('Password confirmation does not match!');
-		      </script>";
-		return false;
-	}
-
-	// enkripsi password
-	$password = md5($password);
-
-	// tambahkan userbaru ke database
-	mysqli_query($conn, "INSERT INTO users (username, name, role, password) VALUES ('$username', '$name', '$role', '$password')");
-
-	return mysqli_affected_rows($conn);
+    // tambahkan userbaru ke database
+    $stmt = $conn->prepare("INSERT INTO users (username, name, role, password) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $username, $name, $role, $passwordHash);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    return $affected;
 }
